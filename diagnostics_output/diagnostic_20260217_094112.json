@@ -1,0 +1,180 @@
+{
+  "timestamp": "2026-02-17T09:41:12.580942",
+  "results": {
+    "i2c_enable": {
+      "status": "WARNING",
+      "details": {
+        "action": "raspi-config not found"
+      }
+    },
+    "system_info": {
+      "status": "OK",
+      "details": {
+        "hostname": "KOMPUTER",
+        "platform": "Windows-10-10.0.19045-SP0",
+        "machine": "AMD64",
+        "processor": "Intel64 Family 6 Model 186 Stepping 2, GenuineIntel",
+        "python": "3.13.5",
+        "time": "2026-02-17T09:41:12.362259"
+      }
+    },
+    "python_packages": {
+      "status": "OK",
+      "details": {
+        "adafruit_pca9685": "NOT INSTALLED",
+        "adafruit_motor": "NOT INSTALLED",
+        "board": "NOT INSTALLED",
+        "busio": "NOT INSTALLED",
+        "gpiozero": "N/A",
+        "picamera2": "NOT INSTALLED",
+        "cv2": "4.13.0",
+        "numpy": "2.3.1",
+        "pyaudio": "NOT INSTALLED",
+        "vosk": "NOT INSTALLED",
+        "smbus2": "NOT INSTALLED",
+        "rpi_ws281x": "NOT INSTALLED",
+        "rclpy": "NOT INSTALLED",
+        "sensor_msgs": "NOT INSTALLED",
+        "geometry_msgs": "NOT INSTALLED",
+        "std_msgs": "NOT INSTALLED",
+        "cv_bridge": "NOT INSTALLED"
+      }
+    },
+    "gpio": {
+      "status": "OK",
+      "details": {
+        "used_pins": {
+          "GPIO2": "I2C SDA",
+          "GPIO3": "I2C SCL",
+          "GPIO12": "WS2812 LED Data",
+          "GPIO16": "Line Tracking Middle",
+          "GPIO17": "Laser (SKIP)",
+          "GPIO19": "Line Tracking Right",
+          "GPIO20": "Line Tracking Left",
+          "GPIO23": "HC-SR04 Trigger",
+          "GPIO24": "HC-SR04 Echo"
+        }
+      }
+    },
+    "i2c_scan": {
+      "status": "WARNING",
+      "details": {
+        "devices": [],
+        "known": {
+          "0x48": "ADS7830 (8-канальный АЦП)",
+          "0x4b": "ADS7830 (8-канальный АЦП, альт. адрес)",
+          "0x5f": "PCA9685 (Adeept Robot HAT, PWM-контроллер)",
+          "0x40": "PCA9685 (стандартный адрес)",
+          "0x68": "MPU6050 (IMU — гироскоп + акселерометр) [НЕ УСТАНОВЛЕН]"
+        }
+      }
+    },
+    "ads7830": {
+      "status": "ERROR",
+      "details": {
+        "error": "smbus2 not installed"
+      }
+    },
+    "pca9685": {
+      "status": "ERROR",
+      "details": {
+        "error": "No module named 'board'"
+      }
+    },
+    "drv8833": {
+      "status": "ERROR",
+      "details": {
+        "error": "PCA9685 not available"
+      }
+    },
+    "lm324": {
+      "status": "OK",
+      "details": {
+        "type": "LM324 Quad Op-Amp",
+        "note": "Passive component, tested indirectly via ADS7830 and line tracking"
+      }
+    },
+    "motors": {
+      "status": "ERROR",
+      "details": {
+        "error": "PCA9685 not available"
+      }
+    },
+    "servos_ad002": {
+      "status": "ERROR",
+      "details": {
+        "error": "PCA9685 not available"
+      }
+    },
+    "ultrasonic": {
+      "status": "ERROR",
+      "details": {
+        "error": "Unable to load any default pin factory!"
+      }
+    },
+    "line_tracking": {
+      "status": "ERROR",
+      "details": {
+        "error": "Unable to load any default pin factory!"
+      }
+    },
+    "ws2812_led": {
+      "status": "ERROR",
+      "details": {
+        "error": "rpi_ws281x not installed"
+      }
+    },
+    "camera": {
+      "status": "ERROR",
+      "details": {
+        "error": "No module named 'picamera2'"
+      }
+    },
+    "microphone": {
+      "status": "ERROR",
+      "details": {
+        "error": "pyaudio not installed"
+      }
+    },
+    "adeept_robot_hat": {
+      "status": "OK",
+      "details": {
+        "type": "Adeept Robot HAT V3.1",
+        "chips": [
+          "PCA9685",
+          "DRV8833 x2",
+          "ADS7830",
+          "LM324"
+        ]
+      }
+    },
+    "vosk": {
+      "status": "WARNING",
+      "details": {
+        "error": "vosk not installed"
+      }
+    }
+  },
+  "summary": {
+    "total": 18,
+    "ok": 5,
+    "warnings": 3,
+    "errors": 10
+  },
+  "skipped_modules": [
+    {
+      "name": "laser",
+      "reason": "Не установлен",
+      "gpio": 17
+    },
+    {
+      "name": "imu_mpu6050",
+      "reason": "Гироскоп+акселерометр не установлен",
+      "i2c": "0x68"
+    }
+  ],
+  "saved_files": [
+    "C:\\Users\\Роман\\Desktop\\Diagnostic\\diagnostics_output\\diagnostic_20260217_094112.log",
+    "C:\\Users\\Роман\\Desktop\\Diagnostic\\diagnostics_output\\diagnostic_20260217_094112.json"
+  ]
+}
