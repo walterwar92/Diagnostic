@@ -1,9 +1,8 @@
 #!/bin/bash
 # =============================================================================
 # Run with: sudo bash setup_robot.sh
+# Совместимость: Raspberry Pi OS Trixie (Debian 13) / Bookworm (Debian 12)
 # =============================================================================
-
-set -e
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -14,32 +13,62 @@ log_info()  { echo -e "${GREEN}[INFO]${NC}  $1"; }
 log_warn()  { echo -e "${YELLOW}[WARN]${NC}  $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
+# Установить apt-пакет с обработкой ошибки
+apt_install() {
+    if apt-get install -y "$1" 2>/dev/null; then
+        log_info "  $1 — установлен"
+    else
+        log_error "  $1 — НЕ установлен, пропуск"
+        INSTALL_FAILED=$((INSTALL_FAILED + 1))
+    fi
+}
+
+# Установить pip-пакет с обработкой ошибки
+pip_install() {
+    if pip3 install --break-system-packages "$1"; then
+        log_info "  $1 — установлен"
+    else
+        log_error "  $1 — НЕ установлен, пропуск"
+        INSTALL_FAILED=$((INSTALL_FAILED + 1))
+    fi
+}
+
+INSTALL_FAILED=0
+
 if [ "$EUID" -ne 0 ]; then
     log_error "Run as root: sudo bash setup_robot.sh"
     exit 1
 fi
 
+# Определяем реального пользователя (не root)
+REAL_USER="${SUDO_USER:-$(logname 2>/dev/null || echo pi)}"
+REAL_HOME=$(eval echo "~$REAL_USER")
+log_info "Пользователь: $REAL_USER, домашняя директория: $REAL_HOME"
+
 # ── Phase 1: System packages ──────────────────────────────────────────
 log_info "Updating package lists..."
 apt-get update
 
+# Все apt-пакеты — каждый устанавливается отдельно, ошибка не останавливает скрипт
 log_info "Installing system dependencies..."
-apt-get install -y \
+for pkg in \
     python3-full \
     python3-pip \
     python3-venv \
     python3-numpy \
+    python3-smbus \
+    libcap-dev \
+    i2c-tools \
+    libasound2-dev \
+    portaudio19-dev \
     python3-opencv \
     python3-picamera2 \
     python3-libcamera \
     python3-pyaudio \
-    python3-smbus \
-    libcap-dev \
-    pigpio \
-    python3-pigpio \
-    i2c-tools \
-    libasound2-dev \
-    portaudio19-dev
+    python3-lgpio \
+    python3-gpiozero; do
+    apt_install "$pkg"
+done
 
 # ── Phase 2: Enable interfaces (with I2C validation) ────────────────
 log_info "Checking I2C status..."
@@ -78,37 +107,49 @@ raspi-config nonint do_camera 0 2>/dev/null || true
 
 # ── Phase 3: Pip packages (with --break-system-packages) ─────────────
 log_info "Installing pip packages (hardware drivers)..."
-pip3 install --break-system-packages \
+for pkg in \
     adafruit-circuitpython-pca9685 \
     adafruit-circuitpython-motor \
     adafruit-circuitpython-servokit \
     smbus2 \
     rpi_ws281x \
-    gpiozero
+    gpiozero; do
+    pip_install "$pkg"
+done
 
 # ── Phase 4: Vosk (speech recognition) ───────────────────────────────
 log_info "Installing Vosk..."
-pip3 install --break-system-packages vosk
+pip_install vosk
 
-VOSK_MODEL_DIR="/home/pi/vosk-model-ru"
+VOSK_MODEL_DIR="${REAL_HOME}/vosk-model-ru"
 if [ ! -d "$VOSK_MODEL_DIR" ]; then
     log_info "Downloading Vosk Russian model..."
     VOSK_URL="https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip"
     cd /tmp
-    wget -q "$VOSK_URL" -O vosk-model-ru.zip
-    unzip -q vosk-model-ru.zip -d /home/pi/
-    mv /home/pi/vosk-model-small-ru-0.22 "$VOSK_MODEL_DIR"
-    rm vosk-model-ru.zip
-    chown -R pi:pi "$VOSK_MODEL_DIR"
-    log_info "Vosk model installed to $VOSK_MODEL_DIR"
+    if wget -q "$VOSK_URL" -O vosk-model-ru.zip; then
+        unzip -q vosk-model-ru.zip -d "${REAL_HOME}/" && \
+        mv "${REAL_HOME}/vosk-model-small-ru-0.22" "$VOSK_MODEL_DIR" && \
+        rm vosk-model-ru.zip && \
+        chown -R "${REAL_USER}:${REAL_USER}" "$VOSK_MODEL_DIR" && \
+        log_info "Vosk model installed to $VOSK_MODEL_DIR" || \
+        log_error "Ошибка распаковки Vosk модели, пропуск"
+    else
+        log_error "Не удалось скачать Vosk модель (нет интернета?), пропуск"
+        rm -f vosk-model-ru.zip
+    fi
 else
     log_info "Vosk model already exists at $VOSK_MODEL_DIR"
 fi
 
-# ── Phase 5: Pigpio daemon (for better HC-SR04 accuracy) ─────────────
-log_info "Enabling pigpio daemon..."
-systemctl enable pigpiod
-systemctl start pigpiod
+# ── Phase 5: GPIO daemon (для точных измерений HC-SR04) ──────────────
+# pigpiod — на Bookworm, lgpio — на Trixie
+if command -v pigpiod &>/dev/null; then
+    log_info "Enabling pigpio daemon..."
+    systemctl enable pigpiod
+    systemctl start pigpiod
+else
+    log_info "pigpiod не найден (Trixie использует lgpio) — пропуск"
+fi
 
 # ── Phase 6: Verify installation ─────────────────────────────────────
 log_info "Verifying installed packages..."
@@ -138,6 +179,10 @@ check_package "adafruit_motor"
 check_package "rpi_ws281x"
 
 echo ""
+if [ $INSTALL_FAILED -gt 0 ]; then
+    log_warn "$INSTALL_FAILED пакет(ов) не удалось установить. Смотри [ERROR] выше."
+fi
+
 if [ $FAILED -eq 0 ]; then
     log_info "All packages installed successfully!"
 else
